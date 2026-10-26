@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convite Eletrónico de Luxo Interativo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- html2canvas & jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- JSZip for Album Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            100: '#FFF9E6',
+                            300: '#F5D061',
+                            500: '#D4AF37',
+                            700: '#AA820A',
+                        }
+                    },
+                    fontFamily: {
+                        playfair: ['Playfair Display', 'serif'],
+                        montserrat: ['Montserrat', 'sans-serif'],
+                        cormorant: ['Cormorant Garamond', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(20, 22, 30, 0.75);
+            --text-color: #f3f4f6;
+            --accent-color: #D4AF37;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .font-heading {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF9E6 0%, #D4AF37 50%, #AA820A 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-border {
+            border-image: linear-gradient(to right, #AA820A, #F5D061, #AA820A) 1;
+        }
+
+        /* Particles Canvas Background */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0c10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 3px;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #D4AF37 0%, #AA820A 100%);
+            color: #000;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen pb-12">
+
+    <!-- Canvas de Partículas em Segundo Plano -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Barra de Navegação / Controlo do Sistema -->
+    <nav class="sticky top-0 z-50 glass-card px-4 py-3 border-b border-gold-500/20">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-gem text-amber-400 text-xl"></i>
+                <span class="font-heading font-bold text-lg tracking-wider gold-gradient-text">Convite Elegante</span>
+            </div>
+            
+            <div class="flex items-center gap-3 text-xs md:text-sm">
+                <!-- Seletor de Idioma -->
+                <select id="lang-selector" onchange="changeLanguage(this.value)" class="bg-black/40 text-amber-200 border border-gold-500/30 rounded px-2 py-1 outline-none">
+                    <option value="pt">🇲🇿/🇵🇹 PT</option>
+                    <option value="en">🇬🇧 EN</option>
+                    <option value="fr">🇫🇷 FR</option>
+                </select>
+
+                <!-- Botões do Painel -->
+                <button onclick="toggleModal('studio-modal')" class="px-3 py-1.5 rounded bg-gold-500/10 border border-gold-500/40 text-amber-300 hover:bg-gold-500/20 transition">
+                    <i class="fa-solid fa-palette mr-1"></i> <span data-i18n="nav_studio">Estúdio</span>
+                </button>
+                <button onclick="toggleModal('batch-modal')" class="px-3 py-1.5 rounded bg-gold-500/10 border border-gold-500/40 text-amber-300 hover:bg-gold-500/20 transition">
+                    <i class="fa-solid fa-users mr-1"></i> <span data-i18n="nav_guests">Convidados</span>
+                </button>
+                <button onclick="toggleModal('admin-modal')" class="px-3 py-1.5 rounded bg-amber-500/20 border border-amber-500/50 text-amber-200 hover:bg-amber-500/30 transition">
+                    <i class="fa-solid fa-sliders mr-1"></i> <span data-i18n="nav_dashboard">Painel Admin</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal do Convite -->
+    <main class="relative z-10 max-w-4xl mx-auto px-4 pt-8 space-y-12">
+
+        <!-- Banner de Expiração Pós-Evento (Oculto por Padrão) -->
+        <div id="expired-banner" class="hidden glass-card border-red-500/40 p-6 text-center rounded-2xl bg-red-950/20">
+            <i class="fa-solid fa-clock-rotate-left text-3xl text-red-400 mb-2"></i>
+            <h2 class="font-heading text-2xl text-red-200 font-bold" data-i18n="event_expired_title">Evento Realizado</h2>
+            <p class="text-sm text-gray-300 mt-1" data-i18n="event_expired_desc">Este convite já atingiu o término de validade pós-evento. Agradecemos a presença de todos!</p>
+        </div>
+
+        <!-- Seção Hero / Capa do Convite -->
+        <section class="glass-card rounded-3xl p-8 md:p-12 text-center relative overflow-hidden border border-gold-500/30">
+            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <i class="fa-solid fa-crown text-9xl text-amber-300"></i>
+            </div>
+
+            <!-- Foto de Capa / Anfitriões -->
+            <div class="relative w-36 h-36 md:w-44 md:h-44 mx-auto mb-6 rounded-full p-1.5 bg-gradient-to-tr from-amber-600 via-amber-300 to-yellow-600 shadow-2xl">
+                <img id="host-photo" src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=500&q=80" alt="Anfitriões" class="w-full h-full object-cover rounded-full">
+            </div>
+
+            <p class="text-xs uppercase tracking-widest text-amber-400 font-semibold mb-2" data-i18n="invitation_label">Convite Especial e Pessoal</p>
+            
+            <!-- Saudação Personalizada ao Convidado -->
+            <h1 class="font-heading text-3xl md:text-5xl font-bold mb-4 gold-gradient-text" id="guest-greeting-name">
+                Olá, Caro(a) Convidado(a)
+            </h1>
+
+            <div class="max-w-xl mx-auto my-4 p-4 rounded-xl bg-black/30 border border-gold-500/20">
+                <p class="italic text-sm md:text-base text-amber-100" id="guest-special-message">
+                    "A sua presença será digna do nosso mais profundo agradecimento e de um abraço inesquecível neste dia especial."
+                </p>
+            </div>
+
+            <h2 class="font-heading text-2xl md:text-4xl text-white font-bold mt-6 mb-2" id="event-title-display">
+                Celebração de Aniversário de Luxo
+            </h2>
+            <p class="text-gray-300 text-sm md:text-base max-w-lg mx-auto" id="event-description-display">
+                Junte-se a nós para partilhar momentos inesquecíveis, boa música e uma recepção preparada com todo o carinho.
+            </p>
+
+            <!-- Código do Convite -->
+            <div class="inline-flex items-center gap-2 mt-4 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300">
+                <i class="fa-solid fa-ticket"></i>
+                <span>Código do Convite: <strong id="guest-code-display">CONV-2026-X89B</strong></span>
+            </div>
+
+            <!-- Contagem Decrescente -->
+            <div class="grid grid-cols-4 gap-2 md:gap-4 max-w-md mx-auto mt-8">
+                <div class="glass-card p-3 rounded-xl">
+                    <span class="block text-xl md:text-3xl font-bold text-amber-400" id="cd-days">00</span>
+                    <span class="text-[10px] md:text-xs text-gray-400 uppercase" data-i18n="cd_days">Dias</span>
+                </div>
+                <div class="glass-card p-3 rounded-xl">
+                    <span class="block text-xl md:text-3xl font-bold text-amber-400" id="cd-hours">00</span>
+                    <span class="text-[10px] md:text-xs text-gray-400 uppercase" data-i18n="cd_hours">Horas</span>
+                </div>
+                <div class="glass-card p-3 rounded-xl">
+                    <span class="block text-xl md:text-3xl font-bold text-amber-400" id="cd-minutes">00</span>
+                    <span class="text-[10px] md:text-xs text-gray-400 uppercase" data-i18n="cd_minutes">Min.</span>
+                </div>
+                <div class="glass-card p-3 rounded-xl">
+                    <span class="block text-xl md:text-3xl font-bold text-amber-400" id="cd-seconds">00</span>
+                    <span class="text-[10px] md:text-xs text-gray-400 uppercase" data-i18n="cd_seconds">Seg.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detalhes do Evento & Mapa -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Data & Local -->
+            <div class="glass-card p-6 rounded-2xl space-y-4">
+                <h3 class="font-heading text-xl font-bold text-amber-300 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check"></i> <span data-i18n="event_info_title">Informações Gerais</span>
+                </h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-clock text-amber-400 mt-1"></i>
+                        <div>
+                            <strong class="block text-white" data-i18n="event_date_label">Data & Hora:</strong>
+                            <span id="event-date-display" class="text-gray-300">15 de Novembro de 2026 às 18:00</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-location-dot text-amber-400 mt-1"></i>
+                        <div>
+                            <strong class="block text-white" data-i18n="event_location_label">Localização:</strong>
+                            <span id="event-location-display" class="text-gray-300">Hotel VIP Grand, Av. Marginal, Beira - Moçambique</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-shirt text-amber-400 mt-1"></i>
+                        <div>
+                            <strong class="block text-white" data-i18n="event_dresscode_label">Traje Recomendado:</strong>
+                            <span id="event-dresscode-display" class="text-gray-300">Passeio Completo / Formal Elegante</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Lembrete -->
+                <div class="pt-4 border-t border-gray-700/50 flex flex-wrap gap-2">
+                    <button onclick="addToCalendar()" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-amber-200 border border-gold-500/30 transition flex items-center gap-1.5">
+                        <i class="fa-brands fa-google"></i> <span data-i18n="btn_add_calendar">Google Calendar</span>
+                    </button>
+                    <button onclick="shareWhatsAppReminder()" class="px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-xs text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5">
+                        <i class="fa-brands fa-whatsapp"></i> <span data-i18n="btn_whatsapp_reminder">Lembrete WhatsApp</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mapa / Navegação -->
+            <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <h3 class="font-heading text-xl font-bold text-amber-300 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-map-location-dot"></i> <span data-i18n="map_title">Como Chegar</span>
+                    </h3>
+                    <p class="text-xs text-gray-300 mb-4" data-i18n="map_desc">Clique no botão abaixo para abrir a rota direta no Google Maps ou Waze no seu dispositivo.</p>
+                </div>
+                <div class="space-y-3">
+                    <a id="btn-google-maps" href="https://maps.google.com" target="_blank" class="w-full py-3 rounded-xl btn-gold flex items-center justify-center gap-2 text-sm shadow-lg">
+                        <i class="fa-solid fa-route"></i> <span data-i18n="btn_open_maps">Abrir Rota no Google Maps</span>
+                    </a>
+                    <button onclick="downloadPDFTicket()" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-gold-500/40 text-amber-200 text-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> <span data-i18n="btn_download_pdf">Descarregar Convite em PDF</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Formulário de Confirmação de Presença (RSVP) -->
+        <section id="rsvp-section" class="glass-card p-8 rounded-3xl border border-gold-500/30">
+            <div class="text-center max-w-xl mx-auto mb-6">
+                <h3 class="font-heading text-2xl md:text-3xl font-bold gold-gradient-text" data-i18n="rsvp_title">Confirmação de Presença (RSVP)</h3>
+                <p class="text-xs md:text-sm text-gray-300 mt-1" data-i18n="rsvp_subtitle">Por favor, confirme a sua presença até 5 dias antes da data do evento.</p>
+            </div>
+
+            <form id="rsvp-form" onsubmit="submitRSVP(event)" class="max-w-lg mx-auto space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1" data-i18n="rsvp_field_name">Seu Nome Completo:</label>
+                    <input type="text" id="rsvp-name" required class="w-full bg-black/40 border border-gold-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-amber-400">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1" data-i18n="rsvp_field_phone">Contacto de Telefone / WhatsApp:</label>
+                    <input type="tel" id="rsvp-phone" required class="w-full bg-black/40 border border-gold-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-amber-400">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1" data-i18n="rsvp_field_status">Irá Comparecer?</label>
+                    <select id="rsvp-status" class="w-full bg-black/40 border border-gold-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-amber-400">
+                        <option value="sim">Sim, terei a honra de comparecer! 🥂</option>
+                        <option value="nao">Infelizmente não poderei comparecer. 🙏</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1" data-i18n="rsvp_field_guests">Acompanhantes Adicionais:</label>
+                    <input type="number" id="rsvp-guests-count" min="0" max="5" value="0" class="w-full bg-black/40 border border-gold-500/30 rounded-xl px-4 py-2.5 text-white outline-none focus:border-amber-400">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl btn-gold text-sm uppercase tracking-wider font-bold shadow-xl mt-2">
+                    <i class="fa-solid fa-paper-plane mr-2"></i> <span data-i18n="btn_submit_rsvp">Confirmar Presença</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Galeria & Partilha de Fotos dos Convidados (Até 15 Fotos por Convidado) -->
+        <section class="glass-card p-8 rounded-3xl border border-gold-500/30 space-y-6">
+            <div class="text-center max-w-xl mx-auto">
+                <i class="fa-solid fa-camera-retro text-3xl text-amber-400 mb-2"></i>
+                <h3 class="font-heading text-2xl font-bold gold-gradient-text" data-i18n="photo_hub_title">Álbum de Recordações dos Convidados</h3>
+                <p class="text-xs text-gray-300 mt-1" data-i18n="photo_hub_desc">Partilhe connosco até 15 fotos especiais tiradas por si durante a festa para o nosso álbum de memórias!</p>
+            </div>
+
+            <!-- Upload Area -->
+            <div class="border-2 border-dashed border-gold-500/40 rounded-2xl p-6 text-center bg-black/20 hover:bg-black/40 transition cursor-pointer" onclick="document.getElementById('guest-photo-input').click()">
+                <input type="file" id="guest-photo-input" multiple accept="image/*" onchange="handleGuestPhotosUpload(event)" class="hidden">
+                <i class="fa-solid fa-cloud-arrow-up text-4xl text-amber-300 mb-2"></i>
+                <p class="text-sm text-gray-200 font-medium" data-i18n="photo_upload_btn">Clique aqui para selecionar as suas fotos (Máximo 15)</p>
+                <p class="text-[11px] text-gray-400 mt-1" id="photo-count-status">0 de 15 fotos carregadas</p>
+            </div>
+
+            <!-- Previsualização de Fotos do Convidado -->
+            <div id="guest-photo-preview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-3"></div>
+        </section>
+
+        <!-- Mural de Felicitações / Livro de Mensagens -->
+        <section class="glass-card p-8 rounded-3xl border border-gold-500/30 space-y-6">
+            <h3 class="font-heading text-2xl font-bold text-center gold-gradient-text" data-i18n="guestbook_title">Livro de Mensagens & Felicitações</h3>
+            
+            <div class="flex gap-2">
+                <input type="text" id="guestbook-input" placeholder="Escreva aqui os seus votos de felicidade..." class="flex-1 bg-black/40 border border-gold-500/30 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-amber-400">
+                <button onclick="addGuestbookMessage()" class="px-5 py-2 rounded-xl btn-gold text-xs font-bold uppercase">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <div id="guestbook-messages-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="p-3 rounded-xl bg-black/30 border border-gold-500/10 text-xs space-y-1">
+                    <strong class="text-amber-300">Família Santos:</strong>
+                    <p class="text-gray-300">"Que este dia seja recheado de muita paz, luz e alegrias sem fim! Parabéns!"</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="text-center text-xs text-gray-400 mt-12 relative z-10">
+        <p>© 2026 Plataforma de Convites Eletrónicos de Luxo | Desenvolvido com Elegância e Sofisticação</p>
+    </footer>
+
+    <!-- MODAL 1: Estúdio de Personalização de Cores e Estilo -->
+    <div id="studio-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="glass-card p-6 rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-gold-500/40 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-700/50 pb-3">
+                <h3 class="font-heading text-xl font-bold text-amber-300"><i class="fa-solid fa-palette mr-2"></i>Estúdio de Design</h3>
+                <button onclick="toggleModal('studio-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block mb-1 text-gray-300">Cor do Fundo do Site:</label>
+                    <input type="color" id="studio-bg-color" value="#0b0c10" onchange="updateThemeColors()" class="w-full h-8 rounded bg-transparent cursor-pointer">
+                </div>
+                <div>
+                    <label class="block mb-1 text-gray-300">Cor do Cartão (Vidromorfismo):</label>
+                    <input type="color" id="studio-card-color" value="#14161e" onchange="updateThemeColors()" class="w-full h-8 rounded bg-transparent cursor-pointer">
+                </div>
+                <div>
+                    <label class="block mb-1 text-gray-300">URL da Foto dos Anfitriões:</label>
+                    <input type="text" id="studio-photo-url" onchange="updateHostPhoto(this.value)" placeholder="https://..." class="w-full bg-black/40 border border-gold-500/30 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="block mb-1 text-gray-300">Título do Evento:</label>
+                    <input type="text" id="studio-event-title" value="Celebração de Aniversário de Luxo" onchange="updateEventDetails()" class="w-full bg-black/40 border border-gold-500/30 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="block mb-1 text-gray-300">Data e Hora:</label>
+                    <input type="text" id="studio-event-date" value="15 de Novembro de 2026 às 18:00" onchange="updateEventDetails()" class="w-full bg-black/40 border border-gold-500/30 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="block mb-1 text-gray-300">Localização Extensa:</label>
+                    <input type="text" id="studio-event-location" value="Hotel VIP Grand, Av. Marginal, Beira - Moçambique" onchange="updateEventDetails()" class="w-full bg-black/40 border border-gold-500/30 rounded p-2 text-white">
+                </div>
+            </div>
+
+            <button onclick="toggleModal('studio-modal')" class="w-full py-2.5 rounded-xl btn-gold text-xs font-bold uppercase mt-2">Guardar Alterações</button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Gerador de Links de Convidados em Lote -->
+    <div id="batch-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="glass-card p-6 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gold-500/40 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-700/50 pb-3">
+                <h3 class="font-heading text-xl font-bold text-amber-300"><i class="fa-solid fa-users-gear mr-2"></i>Gerador de Convites Personalizados</h3>
+                <button onclick="toggleModal('batch-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <p class="text-xs text-gray-300">Cole a lista de nomes abaixo. O sistema irá gerar mensagens afetuosas e links únicos para cada pessoa enviar via WhatsApp!</p>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Categoria dos Convidados:</label>
+                <select id="guest-category-select" class="w-full bg-black/40 border border-gold-500/30 rounded-xl px-3 py-2 text-xs text-white">
+                    <option value="tios">Tios & Família Sênior (Mensagem de Respeito e Carinho)</option>
+                    <option value="irmaos">Irmãos & Próximos (Mensagem de Calor e Cumplicidade)</option>
+                    <option value="amigos">Amigos do Peito (Mensagem Alegre e Festiva)</option>
+                    <option value="colegas">Colegas & Geral (Mensagem Elegante e Formal)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-300 mb-1">Lista de Nomes (Um por linha):</label>
+                <textarea id="batch-names-input" rows="4" placeholder="Carlos Alberto&#10;Maria Mendonça&#10;Tio João" class="w-full bg-black/40 border border-gold-500/30 rounded-xl p-3 text-xs text-white outline-none"></textarea>
+            </div>
+
+            <button onclick="generateBatchLinks()" class="w-full py-2.5 rounded-xl btn-gold text-xs font-bold uppercase">Gerar Links & Mensagens WhatsApp</button>
+
+            <!-- Resultado da Geração -->
+            <div id="batch-results-list" class="space-y-2 max-h-48 overflow-y-auto pt-2"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Painel Admin & Suporte MySQL -->
+    <div id="admin-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="glass-card p-6 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gold-500/40 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-700/50 pb-3">
+                <h3 class="font-heading text-xl font-bold text-amber-300"><i class="fa-solid fa-chart-line mr-2"></i>Painel do Anfitrião & Base de Dados</h3>
+                <button onclick="toggleModal('admin-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <!-- Resumo de Respostas -->
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                    <span class="block text-xl font-bold text-emerald-400" id="admin-confirmed-count">0</span>
+                    <span class="text-[10px] text-gray-300 uppercase">Confirmados</span>
+                </div>
+                <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
+                    <span class="block text-xl font-bold text-red-400" id="admin-declined-count">0</span>
+                    <span class="text-[10px] text-gray-300 uppercase">Recusados</span>
+                </div>
+                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                    <span class="block text-xl font-bold text-amber-400" id="admin-photos-count">0</span>
+                    <span class="text-[10px] text-gray-300 uppercase">Fotos Recebidas</span>
+                </div>
+            </div>
+
+            <button onclick="downloadAlbumZIP()" class="w-full py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold flex items-center justify-center gap-2">
+                <i class="fa-solid fa-file-zipper text-lg"></i> Descarregar Álbum de Fotos em ZIP
+            </button>
+
+            <!-- Tabela de Confirmações -->
+            <div>
+                <h4 class="text-xs font-bold text-gray-300 mb-2">Lista de Respostas RSVP:</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[11px] text-gray-300">
+                        <thead class="bg-black/50 text-amber-300 uppercase">
+                            <tr>
+                                <th class="p-2">Nome</th>
+                                <th class="p-2">Contacto</th>
+                                <th class="p-2">Status</th>
+                                <th class="p-2">Acomp.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-rsvp-table-body" class="divide-y divide-gray-800">
+                            <tr>
+                                <td colspan="4" class="p-3 text-center text-gray-500">Nenhuma resposta registada ainda.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL E LÓGICA DO SISTEMA -->
+    <script>
+        // --- 1. ESTADO E DADOS INICIAIS ---
+        let currentLang = 'pt';
+        let guestPhotosList = [];
+        let rsvpSubmissions = [];
+
+        const defaultMessages = {
+            tios: "A sua presença será um abraço acolhedor e um motivo de grande honra e respeito para a nossa família.",
+            irmaos: "Sua presença é fundamental! Não haveria celebração completa sem o teu sorriso, energia e cumplicidade.",
+            amigos: "A sua presença será digna de uma grande celebração, brindes inesquecíveis e muitos abraços!",
+            colegas: "Sua presença será digna do nosso mais profundo agradecimento e consideração nesta data especial."
+        };
+
+        const translations = {
+            pt: {
+                nav_studio: "Estúdio", nav_guests: "Convidados", nav_dashboard: "Painel Admin",
+                invitation_label: "Convite Especial e Pessoal", cd_days: "Dias", cd_hours: "Horas",
+                cd_minutes: "Min.", cd_seconds: "Seg.", event_info_title: "Informações Gerais",
+                btn_add_calendar: "Google Calendar", btn_whatsapp_reminder: "Lembrete WhatsApp",
+                map_title: "Como Chegar", btn_open_maps: "Abrir Rota no Google Maps",
+                btn_download_pdf: "Descarregar Convite em PDF", rsvp_title: "Confirmação de Presença (RSVP)",
+                photo_hub_title: "Álbum de Recordações dos Convidados", guestbook_title: "Livro de Mensagens & Felicitações"
+            },
+            en: {
+                nav_studio: "Studio", nav_guests: "Guests", nav_dashboard: "Admin Panel",
+                invitation_label: "Special & Personal Invitation", cd_days: "Days", cd_hours: "Hours",
+                cd_minutes: "Min.", cd_seconds: "Sec.", event_info_title: "General Information",
+                btn_add_calendar: "Google Calendar", btn_whatsapp_reminder: "WhatsApp Reminder",
+                map_title: "Get Directions", btn_open_maps: "Open in Google Maps",
+                btn_download_pdf: "Download PDF Ticket", rsvp_title: "RSVP Confirmation",
+                photo_hub_title: "Guest Photo Album", guestbook_title: "Guestbook & Wishes"
+            },
+            fr: {
+                nav_studio: "Studio", nav_guests: "Invités", nav_dashboard: "Admin",
+                invitation_label: "Invitation Personnelle", cd_days: "Jours", cd_hours: "Heures",
+                cd_minutes: "Min.", cd_seconds: "Sec.", event_info_title: "Informations Générales",
+                btn_add_calendar: "Google Calendar", btn_whatsapp_reminder: "Rappel WhatsApp",
+                map_title: "Localisation", btn_open_maps: "Ouvrir dans Google Maps",
+                btn_download_pdf: "Télécharger le Billet PDF", rsvp_title: "Confirmation (RSVP)",
+                photo_hub_title: "Album Photos des Invités", guestbook_title: "Livre d'or & Vœux"
+            }
+        };
+
+        // --- 2. INICIALIZAÇÃO DA PÁGINA ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initParticles();
+            parseURLParams();
+            startCountdown();
+            checkEventExpiration();
+        });
+
+        // Parse Parâmetros de URL (?guest=Nome&msg=...)
+        function parseURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            const guestName = params.get('guest');
+            const customCode = params.get('code');
+            const category = params.get('cat');
+
+            if (guestName) {
+                document.getElementById('guest-greeting-name').innerText = `Olá, ${guestName}`;
+                document.getElementById('rsvp-name').value = guestName;
+            }
+            if (customCode) {
+                document.getElementById('guest-code-display').innerText = customCode;
+            }
+            if (category && defaultMessages[category]) {
+                document.getElementById('guest-special-message').innerText = `"${defaultMessages[category]}"`;
+            }
+        }
+
+        // --- 3. CONTAGEM DECRESCENTE E EXPIRAÇÃO (48H) ---
+        const eventDateTarget = new Date('2026-11-15T18:00:00').getTime();
+
+        function startCountdown() {
+            setInterval(() => {
+                const now = new Date().getTime();
+                const distance = eventDateTarget - now;
+
+                if (distance > 0) {
+                    document.getElementById('cd-days').innerText = String(Math.floor(distance / (1000 * 60 * 60 * 24))).padStart(2, '0');
+                    document.getElementById('cd-hours').innerText = String(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
+                    document.getElementById('cd-minutes').innerText = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                    document.getElementById('cd-seconds').innerText = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
+                }
+            }, 1000);
+        }
+
+        function checkEventExpiration() {
+            const now = new Date().getTime();
+            const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
+            if (now > (eventDateTarget + fortyEightHoursInMs)) {
+                document.getElementById('expired-banner').classList.remove('hidden');
+                document.getElementById('rsvp-section').classList.add('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        // --- 4. UPLOAD DE FOTOS DOS CONVIDADOS (MÁX. 15) ---
+        function handleGuestPhotosUpload(event) {
+            const files = Array.from(event.target.files);
+            if (guestPhotosList.length + files.length > 15) {
+                alert("Pode carregar no máximo 15 fotografias.");
+                return;
+            }
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    guestPhotosList.push({ name: file.name, url: e.target.result });
+                    renderGuestPhotos();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderGuestPhotos() {
+            const grid = document.getElementById('guest-photo-preview-grid');
+            grid.innerHTML = '';
+            guestPhotosList.forEach((item, index) => {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'relative aspect-square rounded-xl overflow-hidden border border-gold-500/30 group';
+                imgDiv.innerHTML = `
+                    <img src="${item.url}" class="w-full h-full object-cover">
+                    <button onclick="removePhoto(${index})" class="absolute top-1 right-1 bg-red-600/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition">✕</button>
+                `;
+                grid.appendChild(imgDiv);
+            });
+            document.getElementById('photo-count-status').innerText = `${guestPhotosList.length} de 15 fotos carregadas`;
+            document.getElementById('admin-photos-count').innerText = guestPhotosList.length;
+        }
+
+        function removePhoto(index) {
+            guestPhotosList.splice(index, 1);
+            renderGuestPhotos();
+        }
+
+        // --- 5. SUBMISSÃO DE RSVP & ADMIN ---
+        function submitRSVP(e) {
+            e.preventDefault();
+            const name = document.getElementById('rsvp-name').value;
+            const phone = document.getElementById('rsvp-phone').value;
+            const status = document.getElementById('rsvp-status').value;
+            const count = document.getElementById('rsvp-guests-count').value;
+
+            rsvpSubmissions.push({ name, phone, status, count });
+            updateAdminDashboard();
+
+            alert(`Obrigado, ${name}! A sua confirmação foi registada com sucesso.`);
+            document.getElementById('rsvp-form').reset();
+        }
+
+        function updateAdminDashboard() {
+            const tbody = document.getElementById('admin-rsvp-table-body');
+            tbody.innerHTML = '';
+
+            let confirmed = 0;
+            let declined = 0;
+
+            rsvpSubmissions.forEach(sub => {
+                if (sub.status === 'sim') confirmed++; else declined++;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-2">${sub.name}</td>
+                    <td class="p-2">${sub.phone}</td>
+                    <td class="p-2 font-bold ${sub.status === 'sim' ? 'text-emerald-400' : 'text-red-400'}">${sub.status === 'sim' ? 'Confirmado' : 'Recusado'}</td>
+                    <td class="p-2">${sub.count}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('admin-confirmed-count').innerText = confirmed;
+            document.getElementById('admin-declined-count').innerText = declined;
+        }
+
+        // --- 6. GERADOR DE LINKS EM LOTE ---
+        function generateBatchLinks() {
+            const textarea = document.getElementById('batch-names-input').value;
+            const category = document.getElementById('guest-category-select').value;
+            const names = textarea.split('\n').filter(n => n.trim() !== '');
+
+            const resultsContainer = document.getElementById('batch-results-list');
+            resultsContainer.innerHTML = '';
+
+            names.forEach((name, i) => {
+                const cleanName = name.trim();
+                const code = `CONV-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                const baseUrl = window.location.origin + window.location.pathname;
+                const link = `${baseUrl}?guest=${encodeURIComponent(cleanName)}&code=${code}&cat=${category}`;
+                const msgText = `Olá ${cleanName}! ${defaultMessages[category]} Aceda ao seu convite personalizado no link: ${link}`;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-2.5 rounded-xl bg-black/40 border border-gold-500/20 text-xs flex justify-between items-center gap-2';
+                itemDiv.innerHTML = `
+                    <div class="truncate">
+                        <strong class="text-amber-300 block">${cleanName}</strong>
+                        <span class="text-[10px] text-gray-400 truncate block">${link}</span>
+                    </div>
+                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(msgText)}" target="_blank" class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] whitespace-nowrap">
+                        <i class="fa-brands fa-whatsapp mr-1"></i>Enviar
+                    </a>
+                `;
+                resultsContainer.appendChild(itemDiv);
+            });
+        }
+
+        // --- 7. DESCARREGAR ÁLBUM EM ZIP ---
+        function downloadAlbumZIP() {
+            if (guestPhotosList.length === 0) {
+                alert("Nenhuma foto foi enviada pelos convidados ainda.");
+                return;
+            }
+            const zip = new JSZip();
+            const imgFolder = zip.folder("album_recordacoes");
+
+            guestPhotosList.forEach((item, idx) => {
+                const base64Data = item.url.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+                imgFolder.file(`foto_${idx + 1}.jpg`, base64Data, { base64: true });
+            });
+
+            zip.generateAsync({ type: "blob" }).then(function (content) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = "Album_Recordacoes_Evento.zip";
+                link.click();
+            });
+        }
+
+        // --- 8. GERADOR DE PDF DO CONVITE ---
+        function downloadPDFTicket() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' });
+
+            doc.setFillColor(11, 12, 16);
+            doc.rect(0, 0, 210, 148, 'F');
+
+            doc.setDrawColor(212, 175, 55);
+            doc.setLineWidth(1);
+            doc.rect(5, 5, 200, 138);
+
+            doc.setTextColor(212, 175, 55);
+            doc.setFont('times', 'bold');
+            doc.setFontSize(22);
+            doc.text("CONVITE OFICIAL", 105, 25, { align: "center" });
+
+            const guestName = document.getElementById('guest-greeting-name').innerText;
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.text(guestName, 105, 45, { align: "center" });
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(200, 200, 200);
+            doc.text("15 de Novembro de 2026 às 18:00 | Hotel VIP Grand, Beira", 105, 60, { align: "center" });
+
+            const code = document.getElementById('guest-code-display').innerText;
+            doc.setTextColor(212, 175, 55);
+            doc.text(`Código de Acesso: ${code}`, 105, 75, { align: "center" });
+
+            doc.save("Convite_Elegante.pdf");
+        }
+
+        // --- 9. UTILITÁRIOS (IDIOMA, MODAIS & PARTICLES) ---
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerText = t[key];
+            });
+        }
+
+        function updateThemeColors() {
+            const bg = document.getElementById('studio-bg-color').value;
+            const card = document.getElementById('studio-card-color').value;
+            document.documentElement.style.setProperty('--bg-color', bg);
+            document.documentElement.style.setProperty('--card-bg', card);
+        }
+
+        function updateHostPhoto(url) {
+            if (url) document.getElementById('host-photo').src = url;
+        }
+
+        function updateEventDetails() {
+            document.getElementById('event-title-display').innerText = document.getElementById('studio-event-title').value;
+            document.getElementById('event-date-display').innerText = document.getElementById('studio-event-date').value;
+            document.getElementById('event-location-display').innerText = document.getElementById('studio-event-location').value;
+        }
+
+        function addGuestbookMessage() {
+            const input = document.getElementById('guestbook-input');
+            if (!input.value.trim()) return;
+
+            const list = document.getElementById('guestbook-messages-list');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'p-3 rounded-xl bg-black/30 border border-gold-500/10 text-xs space-y-1';
+            msgDiv.innerHTML = `<strong class="text-amber-300">Convidado:</strong><p class="text-gray-300">"${input.value}"</p>`;
+            list.prepend(msgDiv);
+            input.value = '';
+        }
+
+        function addToCalendar() {
+            const title = encodeURIComponent(document.getElementById('event-title-display').innerText);
+            const location = encodeURIComponent(document.getElementById('event-location-display').innerText);
+            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&location=${location}`;
+            window.open(url, '_blank');
+        }
+
+        function shareWhatsAppReminder() {
+            const title = document.getElementById('event-title-display').innerText;
+            const text = encodeURIComponent(`Lembrete: O evento "${title}" será no dia 15 de Novembro!`);
+            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+        }
+
+        // Fundo com Animação de Partículas em Suave Brilho Dourado
+        function initParticles() {
+            const canvas = document.getElementById('particles-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 0.5,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.5 + 0.2
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y -= p.speed;
+                    if (p.y < 0) p.y = canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(212, 175, 55, ${p.alpha})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
